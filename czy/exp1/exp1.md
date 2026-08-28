@@ -5,6 +5,7 @@
 | 编号 | 日期 | 摘要 | 状态 | Task ID | GM账号 | checkpoint |
 | --- | --- | --- | --- | --- | --- | --- |
 | exp0 | 2026-08-28 | 基线：切换 physically_mirrored URDF + 右踝 pitch 符号修复后本机从零训练 6000 轮；回放全程稳定行走、起停正常，速度跟踪 71% 未达标 | ⚠️部分达标（已测试） | 本机训练（RTX A6000） | 无（本机训练） | model_6000.pt |
+| exp0.1 | 2026-08-28 | 逐关节 armature 对齐真机阶跃辨识（膝 0.25 / 髋Pitch 0.16 / 髋Yaw 逐侧），Flux 云端从零 6000 轮 | 🔄训练中 | TASK_20260828_113 | limxmtcm4nrkwbk70j@emalupe.com | 待训练完成 |
 
 ---
 
@@ -142,3 +143,74 @@
 - exp0.1（微调）：加载 model_6000 续训，收紧 `commands.ranges.lin_vel_x` 上限至 0.6 或提高 `tracking_sigma`/`tracking_lin_vel` 权重，强化速度精度
 - 引入真机辨识的 armature 逐关节配置（已改好 config，本实验未包含），预期改善动力学保真与速度响应
 - 观察侧向速度：如仍 ~0.14，考虑提高 `feet_distance`/`orientation` 权重
+
+---
+
+## 实验 exp0.1：逐关节 armature 对齐真机辨识
+
+### 1. 上一实验结果与教训
+
+> 数据：exp0 训练日志 + `czy/data/exp0/isaac_diag.csv`
+> - Mean reward 147.8（≥120 ✅）、Mean episode length 2210/2400（≥2100 ✅）
+> - 回放前进 0.6 m/s 稳态跟踪仅 0.426 m/s（**71%**，❌ 未达 80%）；侧向 |vy|≈0.14 m/s 偏大
+> - 4800→6000 轮跟踪无提升（0.446→0.426），reward 进入平台期
+>
+> **核心教训**：
+> - URDF 右踝符号修复后步态可正常习得，验证了 URDF 约定修复正确
+> - 速度跟踪瓶颈不在训练轮数；本轮引入真机动力学保真（armature），从零重训
+
+### 2. 本轮修改目标
+
+- 目标1：仿真关节有效惯量（M_ii + armature）对齐真机阶跃辨识结果
+- 目标2：云端从零 6000 轮重训，验证 armature 对齐后的步态与速度跟踪
+- 验收标准：Mean reward ≥ 120；ep_len ≥ 2100；前进 0.6 m/s 稳态跟踪 ≥ 80%（较 exp0 的 71% 提升）；不摔倒
+
+### 3. 修改内容
+
+### 修改一：逐关节 armature 对齐真机阶跃辨识
+
+| 参数 | 旧值 | 新值 | 说明 |
+| --- | --- | --- | --- |
+| `randomize_joint_armature_each_joint` | False | **True** | 旧配置逐关节范围不生效，全部关节统一 [0.0001, 0.05] |
+| `joint_1/7_armature_range`（双髋Pitch） | [0.0001, 0.05] | **[0.09, 0.23]** | 辨识 J≈0.43−M_ii 0.271≈0.16，左右对称化 |
+| `joint_3/9_armature_range`（双髋Yaw） | [0.0001, 0.05] | **[0.003, 0.018]** | 逐侧辨识 L 0.0148 / R 0.0060 |
+| `joint_4/10_armature_range`（双膝） | [0.0001, 0.05] | **[0.18, 0.32]** | CORE：辨识 J≈0.36−0.113≈0.25，真机为 URDF 的 3.2 倍，左右一致 |
+| `joint_2/8`（髋Roll）、`joint_5/6/11/12`（双踝） | [0.0001, 0.05] | [0.0001, 0.05]（不变） | 辨识不可靠/无数据，最小干预 |
+| `joint_11/12_armature_range` | 缺失 | [0.0001, 0.05] | 补齐 each_joint=True 循环必需 |
+
+**理由**：真机有效惯量 = URDF M_ii + armature；辨识文档（GENERAL_JOINT_STEP_DYNAMICS_ANALYSIS_WORKFLOW §12）给出膝 3.2 倍、髋Pitch 1.5~1.7 倍的明确惯量缺口，armature 是该缺口的仿真等价物。闭环反推 J 含执行器/延迟/摩擦，不采用。
+
+### 4. 修改文件
+
+- `humanoid/envs/x1/x1_dh_stand_config.py`：修改一（domain_rand armature 段）
+
+### 5. 训练参数
+
+| 参数 | 值 |
+| --- | --- |
+| 训练方式 | 从零（Flux 云端） |
+| GM账号 | limxmtcm4nrkwbk70j@emalupe.com |
+| max_iterations | 6000 |
+| save_interval | 100 |
+| num_envs | 4096 |
+| seed | 5 |
+| learning_rate | 1e-5（fixed） |
+| 算力 | ESKU000001（1×4090D 24G） |
+| 镜像 | BJX00000001 / V000124（isaac-gym-v19） |
+| 代码仓库 | https://github.com/Lee-Weather/X1_29_re0.git @ main，commit `df2fe9f` |
+| 启动命令 | `gm-run X1_29_re0/humanoid/scripts/train.py --task=x1_dh_stand --run_name=exp0_1_armature --headless --max_iterations=6000` |
+
+### 6. 预期与验收
+
+**目标指标**（训练日志，6000 轮）：
+
+| 指标 | exp0 | 本轮目标 | 异常信号 |
+| --- | --- | --- | --- |
+| Mean reward | 147.8 | ≥ 120 | < 80 |
+| Mean episode length | 2210 | ≥ 2100 | < 1500 |
+| 回放前进跟踪（0.6 m/s） | 71% | ≥ 80% | < 60% |
+| 回放侧向 \|vy\| | 0.146 | ≤ 0.10 | > 0.20 |
+
+### 7. 实验结果
+
+> 待训练完成后补充。
