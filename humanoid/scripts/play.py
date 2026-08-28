@@ -191,7 +191,8 @@ def play(args):
             os.makedirs(custom_save_path, exist_ok=True)
 
         print(f"Recording video to: {video_filepath}")
-        video = cv2.VideoWriter(video_filepath, fourcc, 50.0, (1920, 1080))
+        # 每隔 1 个控制步写 1 帧（实际 25fps），故 fps 标 25 保证 1:1 真实速度
+        video = cv2.VideoWriter(video_filepath, fourcc, 25.0, (1920, 1080))
         # video = cv2.VideoWriter(video_filepath, fourcc, 25.0, (1280, 720))
 
 
