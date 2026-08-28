@@ -5,7 +5,7 @@
 | 编号 | 日期 | 摘要 | 状态 | Task ID | GM账号 | checkpoint |
 | --- | --- | --- | --- | --- | --- | --- |
 | exp0 | 2026-08-28 | 基线：切换 physically_mirrored URDF + 右踝 pitch 符号修复后本机从零训练 6000 轮；回放全程稳定行走、起停正常，速度跟踪 71% 未达标 | ⚠️部分达标（已测试） | 本机训练（RTX A6000） | 无（本机训练） | model_6000.pt |
-| exp0.1 | 2026-08-28 | 逐关节 armature 对齐真机阶跃辨识（膝 0.25 / 髋Pitch 0.16 / 髋Yaw 逐侧），Flux 云端从零 6000 轮 | 🔄训练中 | TASK_20260828_113 | limxmtcm4nrkwbk70j@emalupe.com | 待训练完成 |
+| exp0.1 | 2026-08-28 | 逐关节 armature 对齐真机阶跃辨识（膝 0.25 / 髋Pitch 0.16 / 髋Yaw 逐侧），Flux 云端从零 6000 轮 | 🔄训练中 | TASK_20260828_129 | limxmtcm4nrkwbk70j@emalupe.com | 待训练完成 |
 
 ---
 
@@ -197,7 +197,7 @@
 | learning_rate | 1e-5（fixed） |
 | 算力 | ESKU000001（1×4090D 24G） |
 | 镜像 | BJX00000001 / V000124（isaac-gym-v19） |
-| 代码仓库 | https://github.com/Lee-Weather/X1_29_re0.git @ main，commit `df2fe9f` |
+| 代码仓库 | https://github.com/Lee-Weather/X1_29_re0.git @ main，训练代码 commit `df2fe9f`（mesh 相对软链接修复 `0def6aa`） |
 | 启动命令 | `gm-run X1_29_re0/humanoid/scripts/train.py --task=x1_dh_stand --run_name=exp0_1_armature --headless --max_iterations=6000` |
 
 ### 6. 预期与验收
