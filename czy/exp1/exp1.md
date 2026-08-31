@@ -6,7 +6,7 @@
 | --- | --- | --- | --- | --- | --- | --- |
 | exp0 | 2026-08-28 | 基线：切换 physically_mirrored URDF + 右踝 pitch 符号修复后本机从零训练 6000 轮；回放全程稳定行走、起停正常，速度跟踪 71% 未达标 | ⚠️部分达标（已测试） | 本机训练（RTX A6000） | 无（本机训练） | model_6000.pt |
 | exp0.1 | 2026-08-28 | 逐关节 armature 对齐真机阶跃辨识（膝 0.25 / 髋Pitch 0.16 / 髋Yaw 逐侧），Flux 云端从零 6000 轮；回放稳态跟踪 99%（exp0 为 71%），达标 | ✅达标（已测试） | TASK_20260828_129 | limxmtcm4nrkwbk70j@emalupe.com | model_6000.pt |
-| exp0.2 | 2026-08-31 | 侧向速度抑制：新增 lat_vel 线性惩罚 + feet_distance 0.2→0.3，从 exp0.1 ckpt6000 云端续训 3000 轮 | 📝待训练 | 待创建 | limxmtcm4nrkwbk70j@emalupe.com | 继承 TASK_20260828_129 model_6000 |
+| exp0.2 | 2026-08-31 | 侧向速度抑制：新增 lat_vel 线性惩罚 + feet_distance 0.2→0.3，从 exp0.1 ckpt6000 云端续训 3000 轮 | 🔄训练中 | TASK_20260831_027 | limxmtcm4nrkwbk70j@emalupe.com | 继承 TASK_20260828_129 model_6000 |
 
 ---
 
@@ -308,10 +308,10 @@
 | num_envs | 4096 |
 | seed | 5 |
 | learning_rate | 1e-5（fixed） |
-| 算力 | ESKU000001（1×4090D 24G） |
+| 算力 | ESKU000005（1×L20 48G，用户指定） |
 | 镜像 | BJX00000001 / V000124（isaac-gym-v19） |
-| 代码仓库 | https://github.com/Lee-Weather/X1_29_re0.git @ main（提交后记录 SHA） |
-| 启动命令 | `gm-run X1_29_re0/humanoid/scripts/train.py --task=x1_dh_stand --run_name=exp0_2_lat_vel --headless --max_iterations=3000` |
+| 代码仓库 | https://github.com/Lee-Weather/X1_29_re0.git @ main，commit `2f2fe9e` |
+| 启动命令 | `gm-run X1_29_re0/humanoid/scripts/train.py --task=x1_dh_stand --run_name=exp0_2_lat_vel --headless --max_iterations=3000 --resume --load_run exp0_1_cloud --checkpoint 6000` |
 
 **续训说明**：奖励结构新增一项导致 value 目标变化，lr=1e-5 足够小可平稳过渡；checkpoint 元数据由 `flux task model list`（TASK_20260828_129）获取，不猜测路径。
 
