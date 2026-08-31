@@ -60,7 +60,7 @@ class X1DHStandCfg(LeggedRobotCfg):
 
 
     class asset(LeggedRobotCfg.asset):
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/x1/urdf/X1_12DOF_physically_mirrored.urdf'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/x1/urdf/X1_12DOF.urdf'
         xml_file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/x1/mjcf/xyber_x1_flat.xml'
 
         name = "x1"
@@ -136,7 +136,7 @@ class X1DHStandCfg(LeggedRobotCfg):
             'right_hip_roll_joint': -0.05,
             'right_hip_yaw_joint': 0.31,
             'right_knee_pitch_joint': 0.49,
-            'right_ankle_pitch_joint': 0.21, # physically_mirrored URDF 右踝 pitch 轴翻转(0 0 -1)，符号取反保持物理位姿不变
+            'right_ankle_pitch_joint': -0.21, # X1_12DOF.urdf 右踝 pitch 轴 (0 0 1)，与左踝同号即物理对称
             'right_ankle_roll_joint': 0.0,
         }
 
@@ -311,8 +311,8 @@ class X1DHStandCfg(LeggedRobotCfg):
         foot_max_dist = 1.0
 
         # final_swing_joint_pos = final_swing_joint_delta_pos + default_pos
-        # 索引 10 = right_ankle_pitch：physically_mirrored URDF 右踝 pitch 轴翻转，delta 符号取反保持与左踝物理摆动对称
-        final_swing_joint_delta_pos = [0.25, 0.05, -0.11, 0.35, -0.16, 0.0, -0.25, -0.05, 0.11, 0.35, 0.16, 0.0]
+        # 索引 10 = right_ankle_pitch：X1_12DOF.urdf 轴约定下与左踝同号（-0.16），保持物理摆动对称
+        final_swing_joint_delta_pos = [0.25, 0.05, -0.11, 0.35, -0.16, 0.0, -0.25, -0.05, 0.11, 0.35, -0.16, 0.0]
         target_feet_height = 0.03 
         target_feet_height_max = 0.06
         feet_to_ankle_distance = 0.041

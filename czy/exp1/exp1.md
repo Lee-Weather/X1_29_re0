@@ -420,3 +420,18 @@
 ### 7. 实验结果
 
 > 待训练完成后补充。
+
+---
+
+## 附注：URDF 切回 X1_12DOF.urdf（2026-08-31）
+
+> **决策**：应真机侧约定统一要求，`asset.file` 从 `X1_12DOF_physically_mirrored.urdf` 切回 `X1_12DOF.urdf`（右踝 pitch 轴 `0 0 -1` → `0 0 1`，与 MJCF sim2sim 原始约定一致）。
+>
+> **同步修改**（config 三处，FK 验证左右足物理位姿与切换前完全等价：旋转 0.00000° / 位置 0.0000 mm）：
+> 1. `asset.file` → `X1_12DOF.urdf`
+> 2. `default_joint_angles['right_ankle_pitch_joint']` +0.21 → **-0.21**
+> 3. `final_swing_joint_delta_pos[10]` +0.16 → **-0.16**
+>
+> **⚠️ checkpoint 语义影响**：exp0~exp0.3 全部 checkpoint 均在新轴约定下训练，其右踝 pitch 动作/观测语义与旧 URDF 相反——**不可直接续训或回放**，需从零重训（或做右踝符号变换）。armature 逐关节配置为物理惯量，与轴方向无关，保留不变。
+>
+> 后续实验在此配置下进行。
