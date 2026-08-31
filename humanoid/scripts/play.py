@@ -54,10 +54,11 @@ x_vel_cmd, y_vel_cmd, yaw_vel_cmd = 0.0, 0.0, 0.0
 joystick_use = True
 joystick_opened = False
 
-# =========== 速度阶梯（50Hz 控制步数, command_x [m/s]）：0 → 0.6 → 0 ===========
+# =========== 速度阶梯（50Hz 控制步数, command_x [m/s]）：0→0.4→0.6→0 ===========
 VEL_PROFILE = [
     (500, 0.0),   # 站立 10s
-    (500, 0.6),   # 前进 10s
+    (500, 0.4),   # 中速前进 0.4 m/s 10s
+    (500, 0.6),   # 快速前进 0.6 m/s 10s
     (500, 0.0),   # 减速停止 10s
 ]
 TOTAL_PLAY_STEPS = sum(steps for steps, _ in VEL_PROFILE)
