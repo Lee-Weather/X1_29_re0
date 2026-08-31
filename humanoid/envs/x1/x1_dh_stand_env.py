@@ -695,7 +695,7 @@ class X1DHStandEnv(LeggedRobot):
 
     def _reward_vel_mismatch_exp(self):
         """
-        Computes a reward based on the mismatch in the robot's linear and angular velocities. 
+        Computes a reward based on the mismatch in the robot's linear and angular velocities.
         Encourages the robot to maintain a stable velocity by penalizing large deviations.
         """
         lin_mismatch = torch.exp(-torch.square(self.base_lin_vel[:, 2]) * 10)
@@ -704,6 +704,12 @@ class X1DHStandEnv(LeggedRobot):
         c_update = (lin_mismatch + ang_mismatch) / 2.
 
         return c_update
+
+    def _reward_lat_vel(self):
+        # exp0.2: 仅在无侧向指令时线性惩罚侧向速度（消除净漂移），
+        # 侧向指令段豁免以避免与 tracking_lin_vel 的 vy 跟踪冲突
+        no_lat_cmd = (torch.abs(self.commands[:, 1]) <= 0.05).float()
+        return torch.abs(self.base_lin_vel[:, 1]) * no_lat_cmd
 
     def _reward_track_vel_hard(self):
         """

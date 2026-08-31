@@ -330,8 +330,10 @@ class X1DHStandCfg(LeggedRobotCfg):
             # gait
             feet_air_time = 1.2
             foot_slip = -0.1
-            feet_distance = 0.2
+            feet_distance = 0.3   # exp0.2: 0.2→0.3 增大步宽支撑约束，辅助侧向稳定
             knee_distance = 0.2
+            # lateral
+            lat_vel = -0.6        # exp0.2: 新增侧向线速度线性惩罚（无侧向指令时生效），消除净漂移 -0.094
             # contact 
             feet_contact_forces = -0.01
             # vel tracking
