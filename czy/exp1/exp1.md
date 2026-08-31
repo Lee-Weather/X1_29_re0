@@ -435,3 +435,67 @@
 > **⚠️ checkpoint 语义影响**：exp0~exp0.3 全部 checkpoint 均在新轴约定下训练，其右踝 pitch 动作/观测语义与旧 URDF 相反——**不可直接续训或回放**，需从零重训（或做右踝符号变换）。armature 逐关节配置为物理惯量，与轴方向无关，保留不变。
 >
 > 后续实验在此配置下进行。
+
+---
+
+## 实验 exp1：URDF 切回后从零重训基线（lat_vel + armature 继承配置）
+
+### 1. 上一实验结果与教训
+
+> 数据：exp0.2/0.3 系列 + URDF 切回决策（见附注）
+> - exp0.2/0.3 验证：lat_vel 线性惩罚可压制净漂移；feet_distance 加宽致过冲已回退
+> - 应真机约定统一要求，URDF 切回 `X1_12DOF.urdf`（右踝轴 `0 0 1`，与 MJCF 一致），config 符号同步恢复
+> - **核心教训**：URDF 轴约定属于跨模块大改，全部旧 checkpoint 右踝语义不兼容，须从零重训；本实验作为新约定下的基线，继承已验证的 lat_vel/armature 配置
+
+### 2. 本轮修改目标
+
+- 目标1：新 URDF 约定 + 完整继承配置（armature 逐关节、lat_vel -1.2、feet_distance 0.2）从零训练
+- 验收标准：Mean reward ≥ 120；ep_len ≥ 2100；0.4/0.6 稳态跟踪 90%~105%；净漂 |vy 均值| ≤ 0.03；不摔倒
+
+### 3. 修改内容
+
+### 修改一：URDF 切回 + 右踝符号恢复（见 exp1.md 附注）
+
+| 参数 | 值 |
+| --- | --- |
+| `asset.file` | `X1_12DOF.urdf`（右踝轴 0 0 1） |
+| `right_ankle_pitch_joint` | -0.21 |
+| `final_swing_joint_delta_pos[10]` | -0.16 |
+
+**理由**：统一真机/sim2sim/训练三方约定；FK 验证切换前后物理位姿等价。
+
+### 4. 修改文件
+
+- `humanoid/envs/x1/x1_dh_stand_config.py`：修改一（此前 exp0.2/0.3 的 lat_vel/armature 配置继续保留）
+
+### 5. 训练参数
+
+| 参数 | 值 |
+| --- | --- |
+| 训练方式 | 从零（Flux 云端） |
+| GM账号 | limxmtcm5s0yriv75d@emalupe.com（账号2，账号1 已耗尽） |
+| max_iterations | 6000 |
+| save_interval | 100 |
+| num_envs | 4096 |
+| seed | 5 |
+| learning_rate | 1e-5（fixed） |
+| 算力 | ESKU000005（1×L20 48G，skill 首选） |
+| 镜像 | BJX00000001 / V000124（isaac-gym-v19） |
+| 代码仓库 | https://github.com/Lee-Weather/X1_29_re0.git @ main（提交后记录 SHA） |
+| 启动命令 | `gm-run X1_29_re0/humanoid/scripts/train.py --task=x1_dh_stand --run_name=exp1_urdf_rollback --headless --max_iterations=6000` |
+
+### 6. 预期与验收
+
+**目标指标**（回放，速度阶梯 0→0.4→0.6→0）：
+
+| 指标 | 参考（exp0.1 同配置新 URDF） | 本轮目标 | 异常信号 |
+| --- | --- | --- | --- |
+| Mean reward | ~150-160 | ≥ 120 | < 80 |
+| Mean episode length | 2210+ | ≥ 2100 | < 1500 |
+| 0.4/0.6 稳态跟踪 | 118%/108% | 90%~105% | > 115% |
+| 净漂 vy 均值 | -0.069 | \|mean\| ≤ 0.03 | > 0.05 |
+| 不摔倒 | ✅ | ✅ | 中途摔倒 |
+
+### 7. 实验结果
+
+> 待训练完成后补充。
