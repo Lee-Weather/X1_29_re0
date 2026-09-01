@@ -117,7 +117,24 @@ def play(args):
     # headless 下保留 graphics device，供相机传感器离屏录制视频
     if RENDER:
         env_cfg.env.enable_headless_render = True
-    env_cfg.domain_rand.randomize_friction = False 
+    # 回放动力学保真：关闭随机化后，把 armature/damping 固定为训练用校准中心值
+    # （否则关节回退 URDF 默认 armature=0，有效惯量比训练时轻，策略在与训练不一致的动力学上被评测）
+    env_cfg.domain_rand.randomize_joint_armature = False   # 随机关闭，改用下方固定值
+    env_cfg.domain_rand.fixed_armature = {
+        'left_hip_pitch_joint': 0.16,  'right_hip_pitch_joint': 0.16,   # exp1.2 对称中心
+        'left_hip_yaw_joint': 0.03,    'right_hip_yaw_joint': 0.03,     # exp1.2 [0.02,0.04] 中心
+        'left_knee_pitch_joint': 0.27, 'right_knee_pitch_joint': 0.27,  # exp1.2 CORE 中心
+        # 髋 roll / 双踝无辨识数据，训练用 [0.0001,0.05] 近似 0，回放保持 0
+    }
+    env_cfg.domain_rand.fixed_joint_damping = {
+        'left_hip_pitch_joint': 3.0,  'right_hip_pitch_joint': 3.0,
+        'left_hip_roll_joint': 3.0,   'right_hip_roll_joint': 3.0,
+        'left_hip_yaw_joint': 4.0,    'right_hip_yaw_joint': 4.0,
+        'left_knee_pitch_joint': 8.0, 'right_knee_pitch_joint': 8.0,   # exp1.2 手动调参
+        'left_ankle_pitch_joint': 1.5,'right_ankle_pitch_joint': 1.5,
+        'left_ankle_roll_joint': 1.5, 'right_ankle_roll_joint': 1.5,
+    }
+    env_cfg.domain_rand.randomize_friction = False
     env_cfg.domain_rand.push_robots = False 
     env_cfg.domain_rand.continuous_push = False 
     env_cfg.domain_rand.randomize_base_mass = False 
