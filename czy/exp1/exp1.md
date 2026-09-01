@@ -9,7 +9,8 @@
 | exp0.2 | 2026-08-31 | 侧向速度抑制：新增 lat_vel 线性惩罚 + feet_distance 0.2→0.3，从 exp0.1 ckpt6000 云端续训 3000 轮；净漂 -0.094→-0.069、跟踪保持但出现过冲，⚠️部分达标 | ⚠️部分达标（已测试） | TASK_20260831_027 | limxmtcm4nrkwbk70j@emalupe.com | model_8999.pt |
 | exp0.3 | 2026-08-31 | lat_vel -0.6→-1.2 加压残余漂移 + feet_distance 0.3→0.2 回退消过冲，从 exp0.2 ckpt8999 续训至 11500 轮后手动停止 | ⏹️已终止（未验收，ckpt 语义因 URDF 切回作废） | TASK_20260831_141 | limxmtcm4nrkwbk70j@emalupe.com | model_11500.pt（云端） |
 | exp1 | 2026-08-31 | URDF 切回 X1_12DOF 后从零重训基线（继承 lat_vel -1.2/armature 配置），Flux 云端 6000 轮；过冲消除（95%/99%）但净漂 -0.10，⚠️部分达标 | ⚠️部分达标（已测试） | TASK_20260831_161 | limxmtcm5s0yriv75d@emalupe.com（账号2） | model_6000.pt |
-| exp1.1 | 2026-08-31 | 侧漂根因修正：髋Pitch armature 左右对称化 0.16 + lat_vel -1.2->-2.0 + 新增 orientation/feet_rotation 微调，从 exp1 ckpt6000 续训 | 📝待训练 | 待创建 | limxmtcm5s0yriv75d@emalupe.com | 继承 TASK_20260831_161 model_6000 |
+| exp1.1 | 2026-08-31 | 侧漂根因修正：髋Pitch armature 左右对称化 0.16 + lat_vel -1.2->-2.0 + 新增 orientation/feet_rotation 微调，从 exp1 ckpt6000 续训；净漂≈0/力比 1.04/无过冲，✅全面达标 | ✅达标（已测试） | TASK_20260831_181 | limxmtcm5s0yriv75d@emalupe.com | model_8999.pt |
+| exp1.2 | 2026-08-31 | armature 按当前 URDF 实测 M_ii 重校（髋Yaw [0.02,0.04]/膝 [0.22,0.32]/髋Pitch [0.12,0.26]），从 exp1.1 ckpt8999 续训 | 🔄训练中 | TASK_20260901_013 | limxmtcm5s0yriv75d@emalupe.com | 继承 TASK_20260831_181 model_8999 |
 
 ---
 
