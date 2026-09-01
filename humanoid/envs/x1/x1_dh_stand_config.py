@@ -238,16 +238,16 @@ class X1DHStandCfg(LeggedRobotCfg):
         randomize_joint_armature = True
         randomize_joint_armature_each_joint = True  # 必须开启，否则逐关节范围不生效
         joint_armature_range = [0.0001, 0.05]     # 统一回退值（each_joint=False 时使用）
-        joint_1_armature_range = [0.10, 0.22]     # L hip pitch: exp1.1 左右对称化，中心 0.16（左右辨识均值，消除系统性左右不对称）
+        joint_1_armature_range = [0.12, 0.26]     # L hip pitch: exp1.2 覆盖左髋需求 0.243（当前URDF M_ii=0.224），保持左右对称
         joint_2_armature_range = [0.0001, 0.05]   # L hip roll (id unreliable)
-        joint_3_armature_range = [0.003, 0.018]   # L hip yaw (id 0.0148)
-        joint_4_armature_range = [0.18, 0.32]     # L knee (id 0.250) CORE
+        joint_3_armature_range = [0.02, 0.04]     # L hip yaw: exp1.2 修正（当前URDF M_ii=0.0098，真机J=0.0457 需 0.036）
+        joint_4_armature_range = [0.22, 0.32]     # L knee (id 0.3626) CORE: exp1.2 中心上移 0.27（当前URDF M_ii=0.0885）
         joint_5_armature_range = [0.0001, 0.05]   # L ankle pitch (no data)
         joint_6_armature_range = [0.0001, 0.05]   # L ankle roll (no data)
-        joint_7_armature_range = [0.10, 0.22]     # R hip pitch: exp1.1 与左侧完全一致（对称化）
+        joint_7_armature_range = [0.12, 0.26]     # R hip pitch: exp1.2 与左侧一致（对称化）
         joint_8_armature_range = [0.0001, 0.05]   # R hip roll (id unreliable)
-        joint_9_armature_range = [0.003, 0.018]   # R hip yaw (id 0.0060)
-        joint_10_armature_range = [0.18, 0.32]    # R knee (id 0.246) CORE
+        joint_9_armature_range = [0.02, 0.04]     # R hip yaw: exp1.2 与左侧一致
+        joint_10_armature_range = [0.22, 0.32]    # R knee (id 0.3595) CORE: exp1.2 与左侧一致
         joint_11_armature_range = [0.0001, 0.05]  # R ankle pitch (added: each_joint loops 12)
         joint_12_armature_range = [0.0001, 0.05]  # R ankle roll (added)
 

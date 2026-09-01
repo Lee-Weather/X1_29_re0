@@ -596,3 +596,67 @@
 ### 7. 实验结果
 
 > 待训练完成后补充。
+
+---
+
+## 实验 exp1.2：armature 按 URDF 切回后 M_ii 重校（髋Yaw/膝/髋Pitch）
+
+### 1. 上一实验结果与教训
+
+> 数据：exp1.1 回放 `czy/data/exp1.1/isaac_diag.csv`
+> - 净漂彻底消除（0.4 段 -0.119 → **+0.001**）、\|vy\| 达标（0.10）、力比 1.04 对称、无过冲（101%/94%）——左右对称性路线验证成功
+> - **新增缺口**：URDF 切回 `X1_12DOF.urdf` 后其 M_ii 与辨识文档基准（perfect_mirrored：0.271/0.031/0.113）不同，实测当前 URDF M_ii = **0.224/0.010/0.089**，导致部分关节有效惯量 = M_ii+armature 低于真机辨识 J
+>
+> **核心教训**：URDF 切换后 M_ii 基准必须重算；髋Yaw 缺口最大（所需 0.027~0.036 vs 上限 0.018），髋Pitch 左侧 0.243 略超上限。
+
+### 2. 本轮修改目标
+
+- 目标1：髋Yaw/膝/髋Pitch 的有效惯量（M_ii+armature）覆盖真机辨识 J
+- 目标2：保持 exp1.1 的对称性成果（力比 0.97~1.03、净漂 ≤0.04）与跟踪（90%~105%）
+- 验收标准：全部保持 + 不摔倒
+
+### 3. 修改内容
+
+### 修改一：armature 三组修正（数值基于当前 URDF 实测 M_ii）
+
+| 参数 | 旧值 | 新值 | 所需（J−M_ii） |
+| --- | --- | --- | --- |
+| `joint_1/7_armature_range`（髋Pitch） | [0.10, 0.22] | **[0.12, 0.26]** | L 0.243 / R 0.175，左右对称覆盖 |
+| `joint_3/9_armature_range`（髋Yaw） | [0.003, 0.018] | **[0.02, 0.04]** | L 0.036 / R 0.027（最大缺口项） |
+| `joint_4/10_armature_range`（膝） | [0.18, 0.32] | **[0.22, 0.32]** | 0.274 / 0.271，中心上移 0.25→0.27 |
+
+**理由**：URDF 切回后 M_ii 系统性低于 mirrored 基准（髋Yaw 差 3 倍、膝差 24%、髋Pitch 差 17%），armature 推导基准失效；按当前 URDF 实测 M_ii 重算覆盖范围，左右继续保持完全一致。
+
+### 4. 修改文件
+
+- `humanoid/envs/x1/x1_dh_stand_config.py`：修改一（armature 段）
+
+### 5. 训练参数
+
+| 参数 | 值 |
+| --- | --- |
+| 训练方式 | **续训**（源：TASK_20260831_181 @ checkpoint 8999） |
+| GM账号 | limxmtcm5s0yriv75d@emalupe.com（账号2） |
+| max_iterations | 3000（8999 → 11999） |
+| save_interval | 100 |
+| num_envs | 4096 |
+| seed | 5 |
+| learning_rate | 1e-5（fixed） |
+| 算力 | ESKU000001（1×4090D 24G，实测 1.94s/轮，~1.7h） |
+| 镜像 | BJX00000001 / V000124 |
+| 代码仓库 | https://github.com/Lee-Weather/X1_29_re0.git @ main（提交后记录 SHA） |
+| 启动命令 | `gm-run X1_29_re0/humanoid/scripts/train.py --task=x1_dh_stand --run_name=exp1_2_armature_mii --headless --max_iterations=3000 --resume --load_run exp1_1_cloud --checkpoint 8999` |
+
+### 6. 预期与验收
+
+| 指标 | exp1.1 | 本轮目标 | 异常信号 |
+| --- | --- | --- | --- |
+| 净漂 vy（0.4/0.6 稳态） | +0.001/+0.023 | \|mean\| ≤ 0.04 | > 0.08 |
+| \|vy\| | 0.10 | ≤ 0.12 | > 0.15 |
+| 跟踪 0.4/0.6 | 101%/94% | 90%~105% | > 110% |
+| 左右力比 | 1.04 | 0.97~1.03 | < 0.93 |
+| 不摔倒 | ✅ | ✅ | 摔倒 |
+
+### 7. 实验结果
+
+> 待训练完成后补充。
