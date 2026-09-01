@@ -316,11 +316,11 @@ class X1DHStandCfg(LeggedRobotCfg):
         target_feet_height = 0.03 
         target_feet_height_max = 0.06
         feet_to_ankle_distance = 0.041
-        cycle_time = 0.65      # exp1.3: 0.7→0.65 重腿下加快步频补偿推进力
+        cycle_time = 0.7
         # if true negative total rewards are clipped at zero (avoids early termination problems)
         only_positive_rewards = True
         # tracking reward = exp(-error*sigma)
-        tracking_sigma = 4    # exp1.3: 5→4 曲线加宽，小误差区梯度更大
+        tracking_sigma = 5
         max_contact_force = 700  # forces above this value are penalized
         
         class scales:

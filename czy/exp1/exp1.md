@@ -712,20 +712,18 @@ def _reward_yaw_drift(self):
 
 **理由**：偏航来自左右触地占比不对称（0.55 vs 0.52）；该项直接奖励"接触时序符合参考相位"，是治本项——左右步节拍越对齐，每步的偏航贡献越对称。
 
-### 修改三：tracking 权重与步频微调（提跟踪率）
+### 修改三：tracking 权重提高（提跟踪率）
 
 | 参数 | 旧值 | 新值 | 说明 |
 | --- | --- | --- | --- |
 | `rewards.scales.tracking_lin_vel` | 1.8 | **2.2** | +22% 提速优先级 |
-| `rewards.tracking_sigma` | 5 | **4** | 曲线更宽→小误差区梯度更大，改善 0.17~0.15 m/s 残差收敛 |
-| `rewards.cycle_time` | 0.7 | **0.65** | 重腿下稍快步频补偿推进力（步长×频率=速度） |
 
-**理由**：armature 加重后每步做功能力下降，短步频+更强跟踪激励是补偿方向；sigma 4 与 5 在误差 0.15 处梯度比约 1.6:1，专门针对当前残差区间。
+**理由**：armature 加重后每步做功能力下降是跟踪率低的物理原因；仅提高跟踪奖励权重（单变量），tracking_sigma 与 cycle_time 经评估暂不改动（用户决定），避免多变量耦合。
 
 ### 4. 修改文件
 
 - `humanoid/envs/x1/x1_dh_stand_env.py`：新增 `_reward_yaw_drift`
-- `humanoid/envs/x1/x1_dh_stand_config.py`：修改一/二/三（scales + rewards 参数）
+- `humanoid/envs/x1/x1_dh_stand_config.py`：修改一/二/三（scales 段）
 
 ### 5. 训练参数
 
@@ -758,7 +756,6 @@ def _reward_yaw_drift(self):
 
 **风险预案**：
 - yaw_drift -0.8 若致转向跟踪退化（rotate 段跟踪奖励骤降）：掩码阈值收到 0.03 或权重降 -0.5
-- cycle_time 0.65 若致步态碎步（feet_air_time < 0.2s）：回退 0.7，改用 tracking_sigma 单独调
 - 跟踪提升但偏航未改善：feet_contact_number 加到 2.8，说明步拍对称还不够紧
 
 ### 7. 实验结果
