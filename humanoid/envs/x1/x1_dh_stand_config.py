@@ -242,14 +242,14 @@ class X1DHStandCfg(LeggedRobotCfg):
         joint_2_armature_range = [0.0001, 0.05]   # L hip roll (id unreliable)
         joint_3_armature_range = [0.02, 0.04]     # L hip yaw: exp1.2 修正（当前URDF M_ii=0.0098，真机J=0.0457 需 0.036）
         joint_4_armature_range = [0.22, 0.32]     # L knee (id 0.3626) CORE: exp1.2 中心上移 0.27（当前URDF M_ii=0.0885）
-        joint_5_armature_range = [0.0001, 0.05]   # L ankle pitch (no data)
-        joint_6_armature_range = [0.0001, 0.05]   # L ankle roll (no data)
+        joint_5_armature_range = [0.003, 0.04]    # L ankle pitch: exp1.4 覆盖随机化（无辨识数据，不猜中心）
+        joint_6_armature_range = [0.003, 0.04]    # L ankle roll: exp1.4 同上（真机抖动关节，覆盖最关键）
         joint_7_armature_range = [0.12, 0.26]     # R hip pitch: exp1.2 与左侧一致（对称化）
         joint_8_armature_range = [0.0001, 0.05]   # R hip roll (id unreliable)
         joint_9_armature_range = [0.02, 0.04]     # R hip yaw: exp1.2 与左侧一致
         joint_10_armature_range = [0.22, 0.32]    # R knee (id 0.3595) CORE: exp1.2 与左侧一致
-        joint_11_armature_range = [0.0001, 0.05]  # R ankle pitch (added: each_joint loops 12)
-        joint_12_armature_range = [0.0001, 0.05]  # R ankle roll (added)
+        joint_11_armature_range = [0.003, 0.04]   # R ankle pitch: exp1.4 与左侧一致（覆盖随机化）
+        joint_12_armature_range = [0.003, 0.04]   # R ankle roll: exp1.4 与左侧一致（真机抖动关节）
 
         add_lag = True
         randomize_lag_timesteps = True
@@ -351,7 +351,7 @@ class X1DHStandCfg(LeggedRobotCfg):
             base_height = 0.2
             base_acc = 0.2
             # energy
-            action_smoothness = -0.002
+            action_smoothness = -0.008  # exp1.4: -0.002→-0.008 压制真机右踝roll 5.5~6.5Hz 输出振荡（二阶差分对高频灵敏度∝f⁴）
             torques = -8e-9
             dof_vel = -2e-8
             dof_acc = -1e-7
