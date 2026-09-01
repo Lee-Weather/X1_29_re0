@@ -607,21 +607,29 @@ class LeggedRobot(BaseTask):
         ''' Refresh the dof properties of the actor in the given environments, i.e.
             dof friction, damping, armature
         '''
+        # 回放模式：固定 armature/damping 为校准值（不随机），保证评测动力学与训练中心一致
+        fixed_armature = getattr(self.cfg.domain_rand, 'fixed_armature', None)
+        fixed_damping = getattr(self.cfg.domain_rand, 'fixed_joint_damping', None)
         for env_id in env_ids:
             dof_props = self.gym.get_actor_dof_properties(self.envs[env_id], 0)
 
             for i in range(self.num_dof):
+                dof_name = self.dof_names[i]
+                if fixed_armature is not None and dof_name in fixed_armature:
+                    dof_props["armature"][i] = fixed_armature[dof_name]
+                if fixed_damping is not None and dof_name in fixed_damping:
+                    dof_props["damping"][i] = fixed_damping[dof_name]
                 if self.cfg.domain_rand.randomize_joint_friction:
                     if self.cfg.domain_rand.randomize_joint_friction_each_joint:
                         dof_props["friction"][i] *= self.joint_friction_coeffs[env_id, i]
-                    else:    
+                    else:
                         dof_props["friction"][i] *= self.joint_friction_coeffs[env_id, 0]
                 if self.cfg.domain_rand.randomize_joint_damping:
                     if self.cfg.domain_rand.randomize_joint_damping_each_joint:
                         dof_props["damping"][i] *= self.joint_damping_coeffs[env_id, i]
                     else:
                         dof_props["damping"][i] *= self.joint_damping_coeffs[env_id, 0]
-                        
+
                 if self.cfg.domain_rand.randomize_joint_armature:
                     if self.cfg.domain_rand.randomize_joint_armature_each_joint:
                         dof_props["armature"][i] = self.joint_armatures[env_id, i]

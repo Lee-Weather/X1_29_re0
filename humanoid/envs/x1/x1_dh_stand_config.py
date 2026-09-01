@@ -316,11 +316,11 @@ class X1DHStandCfg(LeggedRobotCfg):
         target_feet_height = 0.03 
         target_feet_height_max = 0.06
         feet_to_ankle_distance = 0.041
-        cycle_time = 0.7
+        cycle_time = 0.65      # exp1.3: 0.7→0.65 重腿下加快步频补偿推进力
         # if true negative total rewards are clipped at zero (avoids early termination problems)
         only_positive_rewards = True
         # tracking reward = exp(-error*sigma)
-        tracking_sigma = 5 
+        tracking_sigma = 4    # exp1.3: 5→4 曲线加宽，小误差区梯度更大
         max_contact_force = 700  # forces above this value are penalized
         
         class scales:
@@ -332,12 +332,14 @@ class X1DHStandCfg(LeggedRobotCfg):
             foot_slip = -0.1
             feet_distance = 0.2   # exp0.3: 0.3→0.2 回退（exp0.2 证实带来 vx 过冲副作用，收益不明显）
             knee_distance = 0.2
+            feet_contact_number = 2.4  # exp1.3: 2.0→2.4 强化左右步节拍对称（治偏航离散累积）
             # lateral
             lat_vel = -2.0        # exp1.1: -1.2->-2.0 加压（exp1 净漂 -0.10/-0.12 未压住）
+            yaw_drift = -0.8      # exp1.3: 新增偏航角速度线性惩罚（无转向指令时生效）
             # contact 
             feet_contact_forces = -0.01
             # vel tracking
-            tracking_lin_vel = 1.8
+            tracking_lin_vel = 2.2  # exp1.3: 1.8→2.2 提升跟踪优先级
             tracking_ang_vel = 1.1
             vel_mismatch_exp = 0.5  # lin_z; ang x,y
             low_speed = 0.2

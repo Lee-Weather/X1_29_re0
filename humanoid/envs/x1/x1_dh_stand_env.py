@@ -711,6 +711,12 @@ class X1DHStandEnv(LeggedRobot):
         no_lat_cmd = (torch.abs(self.commands[:, 1]) <= 0.05).float()
         return torch.abs(self.base_lin_vel[:, 1]) * no_lat_cmd
 
+    def _reward_yaw_drift(self):
+        # exp1.3: 仅在无转向指令时线性惩罚偏航角速度（抑制左右步不对称的慢累积漂移），
+        # 转向指令段豁免以避免与 tracking_ang_vel 冲突
+        no_yaw_cmd = (torch.abs(self.commands[:, 2]) <= 0.05).float()
+        return torch.abs(self.base_ang_vel[:, 2]) * no_yaw_cmd
+
     def _reward_track_vel_hard(self):
         """
         Calculates a reward for accurately tracking both linear and angular velocity commands.
