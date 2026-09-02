@@ -17,7 +17,8 @@
 #      <repo>/logs/<experiment>/exported_data/<load_run>/model_<checkpoint>.pt
 #      （与 humanoid.LEGGED_GYM_ROOT_DIR=仓库根 一致）
 #   2. 调用 play.py 完成回放（视频 + 诊断 CSV 输出到 <repo>/logs/<experiment>/play_output/）
-#   3. 将最新诊断 CSV 打包为 <repo>/logs/<experiment>/gm_play/model_isaac_csv.pt（SDK PT 上传目录）
+#   3. 将最新诊断 CSV 打包为 <repo>/logs/<experiment>/exported_data/<load_run>/model_isaac_csv.pt
+#      （SDK 启动扫描时已把该目录注册为 PT 上传目录）
 #   4. 保留 60 秒，等待 SDK 完成扫描与上传
 
 import base64
@@ -33,7 +34,17 @@ from pathlib import Path
 # 仓库根（play.py 通过 humanoid.LEGGED_GYM_ROOT_DIR 引用的是这一级，logs 在此之下）
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = "x1_dh_stand"
-GM_PLAY_DIR = REPO_ROOT / "logs" / EXPERIMENT / "gm_play"
+
+
+def upload_dir(load_run: str) -> Path:
+    """SDK PT 上传目录 = checkpoint 下载目录。
+
+    SDK 在任务启动扫描时把已存在的 PT 文件所在目录注册为上传目录
+    （checkpoint 运行时下载到 exported_data/<load_run>，即被注册），
+    回放后写入同目录的 model_isaac_csv.pt 会被其 inotify 捕获并上传。
+    不要写入回放后才新建的目录（如 gm_play），进不了上传队列。
+    """
+    return REPO_ROOT / "logs" / EXPERIMENT / "exported_data" / load_run
 
 
 def parse_args(argv):
@@ -88,14 +99,14 @@ def download_checkpoint(url: str, dest: Path):
     assert size > 1_000_000, "checkpoint 过小，下载可能失败"
 
 
-def package_csv():
+def package_csv(ckpt_dir: Path):
     csvs = sorted(glob.glob(str(REPO_ROOT / "logs" / EXPERIMENT / "play_output" / "*isaac_diag.csv")))
     assert csvs, "未找到诊断 CSV"
     latest = csvs[-1]
     print(f"[play_gm] 打包 {os.path.basename(latest)} -> model_isaac_csv.pt")
     data = {"bytes": open(latest, "rb").read()}
-    os.makedirs(GM_PLAY_DIR, exist_ok=True)
-    out = os.path.join(GM_PLAY_DIR, "model_isaac_csv.pt")
+    os.makedirs(ckpt_dir, exist_ok=True)
+    out = os.path.join(ckpt_dir, "model_isaac_csv.pt")
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         z.writestr("model_isaac_csv/data.pkl", pickle.dumps(data))
     print(f"[play_gm] 打包完成: {os.path.getsize(out)} bytes")
@@ -110,6 +121,7 @@ def main():
     load_run = args_dict.get("--load_run", "exported_data")
     checkpoint = args_dict.get("--checkpoint", "model_latest")
     dest = REPO_ROOT / "logs" / EXPERIMENT / "exported_data" / load_run / f"model_{checkpoint}.pt"
+    checkpoint_dir = dest.parent
     download_checkpoint(url, dest)
 
     script = Path(__file__).resolve().parent / "play.py"
@@ -121,7 +133,7 @@ def main():
         # 产物（CSV/视频）已写盘即可继续，由 package_csv 的 assert 兜底校验
         print(f"[play_gm] 警告: play.py 退出码 {result.returncode}，继续检查产物")
 
-    package_csv()
+    package_csv(checkpoint_dir)
     print("[play_gm] 保留 60s 等待 SDK 扫描上传...")
     time.sleep(60)
     print("[play_gm] done")
