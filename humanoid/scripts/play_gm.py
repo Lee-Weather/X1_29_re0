@@ -115,7 +115,11 @@ def main():
     script = Path(__file__).resolve().parent / "play.py"
     cmd = [sys.executable, str(script)] + passthrough
     print("[play_gm] 启动回放:", " ".join(cmd))
-    subprocess.run(cmd, check=True, cwd=str(REPO_ROOT))
+    result = subprocess.run(cmd, cwd=str(REPO_ROOT))
+    if result.returncode != 0:
+        # Isaac Gym 在解释器退出销毁 CUDA 上下文时 SEGV 属已知现象；
+        # 产物（CSV/视频）已写盘即可继续，由 package_csv 的 assert 兜底校验
+        print(f"[play_gm] 警告: play.py 退出码 {result.returncode}，继续检查产物")
 
     package_csv()
     print("[play_gm] 保留 60s 等待 SDK 扫描上传...")
