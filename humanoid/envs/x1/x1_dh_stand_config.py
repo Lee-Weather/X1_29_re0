@@ -60,7 +60,7 @@ class X1DHStandCfg(LeggedRobotCfg):
 
 
     class asset(LeggedRobotCfg.asset):
-        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/x1/urdf/X1_12DOF.urdf'
+        file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/x1/urdf/X1_12DOF_physically_mirrored.urdf'
         xml_file = '{LEGGED_GYM_ROOT_DIR}/resources/robots/x1/mjcf/xyber_x1_flat.xml'
 
         name = "x1"
@@ -136,7 +136,7 @@ class X1DHStandCfg(LeggedRobotCfg):
             'right_hip_roll_joint': -0.05,
             'right_hip_yaw_joint': 0.31,
             'right_knee_pitch_joint': 0.49,
-            'right_ankle_pitch_joint': -0.21, # X1_12DOF.urdf 右踝 pitch 轴 (0 0 1)，与左踝同号即物理对称
+            'right_ankle_pitch_joint': -0.21, # X1_12DOF_physically_mirrored.urdf（工作区版）右踝 pitch 轴已改为 (0 0 1)，与左踝同号即物理对称
             'right_ankle_roll_joint': 0.0,
         }
 
@@ -238,16 +238,19 @@ class X1DHStandCfg(LeggedRobotCfg):
         randomize_joint_armature = True
         randomize_joint_armature_each_joint = True  # 必须开启，否则逐关节范围不生效
         joint_armature_range = [0.0001, 0.05]     # 统一回退值（each_joint=False 时使用）
-        joint_1_armature_range = [0.12, 0.26]     # L hip pitch: exp1.2 覆盖左髋需求 0.243（当前URDF M_ii=0.224），保持左右对称
+        # exp1.5：URDF 切回 physically_mirrored，M_ii 变化（髋Pitch 0.225→0.271 / 髋Yaw 0.0265→0.0309 / 膝 0.0883→0.1127）
+        # armature = 真机辨识J − M_ii_PM：髋Pitch 左0.196/右0.128（对称化）、髋Yaw 左0.0148/右0.0060、膝 0.250/0.247
+        # 范围恢复 exp0.1（同 URDF）验证值，站姿 M_ii 与辨识文档 §12 perfect_mirrored 列吻合
+        joint_1_armature_range = [0.09, 0.23]     # L hip pitch (id 0.196)：M_ii=0.271，左右对称化（exp1.1 教训）
         joint_2_armature_range = [0.0001, 0.05]   # L hip roll (id unreliable)
-        joint_3_armature_range = [0.02, 0.04]     # L hip yaw: exp1.2 修正（当前URDF M_ii=0.0098，真机J=0.0457 需 0.036）
-        joint_4_armature_range = [0.22, 0.32]     # L knee (id 0.3626) CORE: exp1.2 中心上移 0.27（当前URDF M_ii=0.0885）
+        joint_3_armature_range = [0.003, 0.018]   # L hip yaw (id 0.0148)：M_ii=0.0309
+        joint_4_armature_range = [0.18, 0.32]     # L knee (id 0.250) CORE：M_ii=0.1127
         joint_5_armature_range = [0.003, 0.04]    # L ankle pitch: exp1.4 覆盖随机化（无辨识数据，不猜中心）
         joint_6_armature_range = [0.003, 0.04]    # L ankle roll: exp1.4 同上（真机抖动关节，覆盖最关键）
-        joint_7_armature_range = [0.12, 0.26]     # R hip pitch: exp1.2 与左侧一致（对称化）
+        joint_7_armature_range = [0.09, 0.23]     # R hip pitch (id 0.128, symmetrized)：与左侧一致
         joint_8_armature_range = [0.0001, 0.05]   # R hip roll (id unreliable)
-        joint_9_armature_range = [0.02, 0.04]     # R hip yaw: exp1.2 与左侧一致
-        joint_10_armature_range = [0.22, 0.32]    # R knee (id 0.3595) CORE: exp1.2 与左侧一致
+        joint_9_armature_range = [0.003, 0.018]   # R hip yaw (id 0.0060)：与左侧一致
+        joint_10_armature_range = [0.18, 0.32]    # R knee (id 0.246) CORE：与左侧一致
         joint_11_armature_range = [0.003, 0.04]   # R ankle pitch: exp1.4 与左侧一致（覆盖随机化）
         joint_12_armature_range = [0.003, 0.04]   # R ankle roll: exp1.4 与左侧一致（真机抖动关节）
 
@@ -311,7 +314,7 @@ class X1DHStandCfg(LeggedRobotCfg):
         foot_max_dist = 1.0
 
         # final_swing_joint_pos = final_swing_joint_delta_pos + default_pos
-        # 索引 10 = right_ankle_pitch：X1_12DOF.urdf 轴约定下与左踝同号（-0.16），保持物理摆动对称
+        # 索引 10 = right_ankle_pitch：physically_mirrored.urdf（工作区版）轴约定与 X1_12DOF 一致（0 0 1），与左踝同号保持物理摆动对称
         final_swing_joint_delta_pos = [0.25, 0.05, -0.11, 0.35, -0.16, 0.0, -0.25, -0.05, 0.11, 0.35, -0.16, 0.0]
         target_feet_height = 0.03 
         target_feet_height_max = 0.06

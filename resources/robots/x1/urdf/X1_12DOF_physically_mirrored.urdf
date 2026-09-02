@@ -2709,10 +2709,8 @@
     
     
     <axis xyz="0 0 -1"/>
-
-
-
-    <!-- exp7 patch: limit was (-2, 0) in sim-group drop (axis unchanged) -> config default +0.49 clamped to 0 (kneel). Restored to (0, 2) matching axis convention and old X1_12DOF.urdf -->
+    
+    
     <limit lower="0" upper="2" effort="180.0" velocity="8.9"/>
     
     
@@ -2782,7 +2780,7 @@
     <child link="right_ankle_pitch_link"/>
     
     
-    <axis xyz="0 0 -1"/>
+    <axis xyz="0 0 1"/>
     
     
     <limit lower="-0.41" upper="0.35" effort="80.0" velocity="13.61"/>

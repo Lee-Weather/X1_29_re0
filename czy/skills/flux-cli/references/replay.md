@@ -13,13 +13,12 @@
 
 仅在用户要求回放训练策略、生成 `play_output.mp4`、导出 `isaac_diag.csv` 或下载完整回放产物时使用。回放不训练策略，只加载已有 checkpoint。
 
-仓库应提供 `humanoid/scripts/play_gm.py` 或等价脚本，并具备：
+仓库提供 `humanoid/scripts/play.py` 作为回放脚本（已移除 `play_gm.py`），并具备：
 
-- `--headless --num_envs=1` 回放；
-- `--checkpoint_url_b64` 运行时下载；
+- `--headless` 回放（本地走 DISPLAY 离屏渲染，见下）；
+- 固定 armature / joint damping 的回放动力学基准；
 - GPU camera 的 headless 渲染；
-- MP4、诊断 PT 与 CSV 导出；
-- CSV 打包为 `model_isaac_csv.pt`。
+- MP4、诊断 CSV 导出到 `logs/x1_dh_stand/play_output/`。
 
 `base_task.py` 在启用 headless camera 时必须保留渲染设备，不能无条件把 `graphics_device_id` 设为 `-1`。
 
@@ -39,7 +38,7 @@ Isaac Gym 镜像中 `/personal` checkpoint 挂载可能不生效。回放任务�
 `startScript` 保持以下形式；官方 CLI 虽改名为 `flux`，运行包装器仍是 `gm-run`：
 
 ```text
-gm-run <repo>/humanoid/scripts/play_gm.py --task=x1_trajectory --headless --num_envs=1 --checkpoint_url_b64=<URL_SAFE_BASE64>
+gm-run <repo>/humanoid/scripts/play.py --task=x1_trajectory --headless
 ```
 
 执行顺序：
