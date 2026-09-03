@@ -151,6 +151,9 @@ class X1DHStandCfg(LeggedRobotCfg):
 
         # action scale: target angle = actionScale * action + defaultAngle
         action_scale = 0.5
+        # exp1.8: 踝 roll 期望角限幅（执行层保证命令可达，附3: 策略索要±0.49而执行仅到+0.09）
+        # None=不限幅；数值=期望角绝对值上限（rad）。作用于 action→pos_des 转换，不改动作空间
+        ankle_roll_des_limit = 0.35
         # decimation: Number of control action updates @ sim DT per policy DT
         decimation = 10  # 50hz 100hz
 
@@ -331,14 +334,14 @@ class X1DHStandCfg(LeggedRobotCfg):
             feet_clearance = 2.0  # exp1.7: 1.0→2.0 拉抬脚（exp1.5/1.6 摆动抬脚p50仅1.5~3.5cm、贴地帧占比45%~75%）
             feet_contact_number = 2.0
             # gait
-            feet_air_time = 1.2
+            feet_air_time = 1.8  # exp1.8: 1.2→1.8 提步频/压双支撑（exp1.7 步频0.8Hz/双支撑50%）
             foot_slip = -0.2   # exp1.7: -0.1→-0.2 压支撑相滑行（步频0.425Hz推算步长0.94m超腿长，前进靠贴地拖蹭）
             feet_distance = 0.2   # exp0.3: 0.3→0.2 回退（exp0.2 证实带来 vx 过冲副作用，收益不明显）
             knee_distance = 0.2
             feet_contact_number = 2.4  # exp1.3: 2.0→2.4 强化左右步节拍对称（治偏航离散累积）
             # lateral
             lat_vel = -2.0        # exp1.1: -1.2->-2.0 加压（exp1 净漂 -0.10/-0.12 未压住）
-            yaw_drift = -0.8      # exp1.3: 新增偏航角速度线性惩罚（无转向指令时生效）
+            yaw_drift = -1.2      # exp1.8: -0.8→-1.2 加压（附2: 左支撑+1.67°/步是偏航唯一净源）
             # contact 
             feet_contact_forces = -0.01
             # vel tracking
@@ -350,7 +353,7 @@ class X1DHStandCfg(LeggedRobotCfg):
             # base pos
             default_joint_pos = 1.0
             orientation = 1.2     # exp1.1: 1.0->1.2 微调（-y 漂伴随左倾，roll 姿态保持协同纠偏）
-            feet_rotation = 0.3
+            feet_rotation = 0.5  # exp1.8: 0.3→0.5 压脚姿态偏转（附3: 左踝roll落地误差22.6°）
             base_height = 0.2
             base_acc = 0.2
             # energy

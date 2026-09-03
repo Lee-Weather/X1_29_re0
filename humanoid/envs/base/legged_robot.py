@@ -733,6 +733,17 @@ class LeggedRobot(BaseTask):
         else:
             p_gains = self.p_gains
             d_gains = self.d_gains
+
+        # exp1.8: 踝 roll 期望角限幅——策略索要极限姿态（如±0.49）时执行层保证命令可达
+        # 在期望角层 clip（lagged_action*scale + default），不修改动作空间
+        ankle_roll_des_limit = getattr(self.cfg.control, 'ankle_roll_des_limit', None)
+        if ankle_roll_des_limit is not None:
+            self.lagged_actions_scaled = self.lagged_actions_scaled.clone()
+            for i, name in enumerate(self.dof_names):
+                if 'ankle_roll' in name:
+                    des = self.lagged_actions_scaled[:, i] + self.default_dof_pos[:, i]
+                    des_clipped = torch.clamp(des, -ankle_roll_des_limit, ankle_roll_des_limit)
+                    self.lagged_actions_scaled[:, i] = des_clipped - self.default_dof_pos[:, i]
             
         if self.cfg.domain_rand.randomize_coulomb_friction:
             torques = p_gains * (self.lagged_actions_scaled + self.default_dof_pos - self.dof_pos + self.motor_offsets) -\
