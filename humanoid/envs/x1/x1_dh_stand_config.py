@@ -316,7 +316,7 @@ class X1DHStandCfg(LeggedRobotCfg):
         # final_swing_joint_pos = final_swing_joint_delta_pos + default_pos
         # 索引 10 = right_ankle_pitch：physically_mirrored.urdf（工作区版）轴约定与 X1_12DOF 一致（0 0 1），与左踝同号保持物理摆动对称
         final_swing_joint_delta_pos = [0.25, 0.05, -0.11, 0.35, -0.16, 0.0, -0.25, -0.05, 0.11, 0.35, -0.16, 0.0]
-        target_feet_height = 0.03 
+        target_feet_height = 0.04
         target_feet_height_max = 0.06
         feet_to_ankle_distance = 0.041
         cycle_time = 0.7
@@ -328,11 +328,11 @@ class X1DHStandCfg(LeggedRobotCfg):
         
         class scales:
             ref_joint_pos = 2.2
-            feet_clearance = 1.
+            feet_clearance = 2.0  # exp1.7: 1.0→2.0 拉抬脚（exp1.5/1.6 摆动抬脚p50仅1.5~3.5cm、贴地帧占比45%~75%）
             feet_contact_number = 2.0
             # gait
             feet_air_time = 1.2
-            foot_slip = -0.1
+            foot_slip = -0.2   # exp1.7: -0.1→-0.2 压支撑相滑行（步频0.425Hz推算步长0.94m超腿长，前进靠贴地拖蹭）
             feet_distance = 0.2   # exp0.3: 0.3→0.2 回退（exp0.2 证实带来 vx 过冲副作用，收益不明显）
             knee_distance = 0.2
             feet_contact_number = 2.4  # exp1.3: 2.0→2.4 强化左右步节拍对称（治偏航离散累积）
@@ -354,7 +354,7 @@ class X1DHStandCfg(LeggedRobotCfg):
             base_height = 0.2
             base_acc = 0.2
             # energy
-            action_smoothness = -0.008  # exp1.4: -0.002→-0.008 压制真机右踝roll 5.5~6.5Hz 输出振荡（二阶差分对高频灵敏度∝f⁴）
+            action_smoothness = -0.004  # exp1.7: -0.008→-0.004 松绑摆腿（exp1.5/1.6 拖地主因；二阶差分对5.5Hz仍是1.5Hz的~180倍，抖动压制保留）
             torques = -8e-9
             dof_vel = -2e-8
             dof_acc = -1e-7
