@@ -15,7 +15,7 @@
 | exp1.4 | 2026-09-02 | 真机右踝 roll 抖动治理：踝 armature 覆盖随机化 [0.003,0.04] ×4 + action_smoothness -0.002→-0.008，从 exp1.3 ckpt14997 续训 L20 3000 轮；跟踪保持 70.6%/69.3%、不摔倒，但偏航漂移回退（0.4 段 14.4° vs 3.6°）、侧向漂移回退 1.20m | ⚠️部分达标（已测试） | TASK_20260902_004 | limxmtcm6wjlso8ce4@emalupe.com（账号3） | model_17996.pt |
 | exp1.5 | 2026-09-02 | URDF 切回 physically_mirrored + armature 按 M_ii 重校（髋Pitch 0.271/髋Yaw 0.0309/膝 0.1127），从零训练 L4 3000 轮；mesh 全解析、跟踪 73.7%/73.8%、偏航段内 -1.5°/5.0°/总 -0.12°、侧向 -0.455m，较 exp1.4 明显修正但未完全压住 | ⚠️部分达标（已测试） | TASK_20260902_138 | limxmtcm6wjlso8ce4@emalupe.com（账号3） | model_3000.pt |
 | exp1.6 | 2026-09-02 | exp1.5 续训 L4 3000 轮至 6000：训练健康（reward 156.6→169.2、ep_len 2327），但回放方向保持灾难性退化——跟踪飙至 89.5%/87.8%，偏航 0.4 段+26.8°/0.6 段+32.0°、全程 60.2°、侧向 3.33m，判定失败 | ❌失败（已测试） | TASK_20260902_196 | limxmtcm6wjlso8ce4@emalupe.com（账号3） | model_5999.pt |
-| exp1.7 | 2026-09-03 | 拖地治理：action_smoothness -0.008→-0.004 松绑摆腿 + feet_clearance 1.0→2.0/target 0.03→0.04 拉抬脚 + foot_slip -0.1→-0.2 压支撑滑行（exp1.5/1.6 双支撑 51%~65%、抬脚 p50 1.5~3.5cm、推算步长 0.94m） | ⚠️部分达标（已测试） | TASK_20260903_042 | limxmtjqaowcbx3sxf@emalupe.com（账号4） | model_6000.pt |
+| exp1.7 | 2026-09-03 | 拖地治理：action_smoothness -0.008→-0.004 松绑摆腿 + feet_clearance 1.0→2.0/target 0.03→0.04 拉抬脚 + foot_slip -0.1→-0.2 压支撑滑行（exp1.5/1.6 双支撑 51%~65%、抬脚 p50 1.5~3.5cm、推算步长 0.94m）；MuJoCo sim2sim 回放 t=4.5s 前倾摔倒（根因：MJCF 踝力限 18 vs 训练 68 Nm + armature=0，详见 §7 附注） | ⚠️部分达标（已测试） | TASK_20260903_042 | limxmtjqaowcbx3sxf@emalupe.com（账号4） | model_6000.pt |
 
 ---
 
@@ -1279,4 +1279,31 @@ rew_action_smoothness -0.0593、rew_yaw_drift -0.0274、rew_lat_vel -0.0381、re
 - 偏航 +7.4°（0.6 段）：yaw_drift -0.8→-1.2 或 feet_contact_number 2.4→2.8（左右支撑时长 0.744/0.716 仍不对称）
 - 真机复测优先：本轮步长/抬脚已回到可用区间，应先真机部署验证 5.5/6.5Hz 踝抖动是否因 -0.004 复发，再决定 exp1.8 是否叠加抖动抑制
 - 真机踝阶跃辨识（悬置已久）：踝 armature 覆盖随机化仍无实测数据支撑，辨识后可治左右不对称根因
+
+#### 附：MuJoCo sim2sim 回放分析（2026-09-03，摔倒根因定位）
+
+> 数据：`czy/analysis/walk_diag_exp1.7_mujoco_20260903.csv`（12.07s@100Hz，cmd：站立 2s → 0.5m/s；从 `czy/data/exp1.7/` 移出以符合三件套规范）
+> 现象：**Isaac 同模型稳定行走 20s，MuJoCo 走 2.5s 后 t=4.54s 前倾摔倒**（pitch 冲至 86°+ 趴地至结束）。
+
+**摔倒时序**（t=4.0~4.6s）：
+
+| 时刻 | 状态 |
+| --- | --- |
+| 4.0~4.3s | L 踝 pitch 跟踪误差增至 **2.0~2.6 rad**，effort 顶死 +18 Nm，pitch 缓升 0.3°→3.9° |
+| 4.33~4.45s | 双踝速度爆至 **±16 rad/s**，力矩正负饱和交替（失稳振荡） |
+| 4.45~4.65s | pitch 13.8°→56.8° 前扑，四踝全部饱和甩摆 |
+
+**根因（MJCF 模型与 Isaac 训练基准失配，三层叠加）**：
+
+1. **执行器力限钳位（主因）**：`xyber_x1_serial.xml` ctrlrange 踝 **±18 Nm**、髋 roll/yaw **±50 Nm**，而 URDF/训练有效限为踝 80×0.85=**68**、髋 180×0.85=**153**——MuJoCo 踝力矩权限仅训练的 **26%**。行走段实测：踝 pitch Kp 项需求 p95 达 **56~90 Nm**，27~34% 帧饱和；髋 roll 饱和 35~41% 帧。策略按 68 Nm 权限设计的蹬地/支撑动作在 MuJoCo 里物理上执行不出来。
+2. **armature=0（共振放大）**：MJCF 所有关节无 armature 属性（=0），而训练踝 armature 随机化 [0.003,0.04]（中值 0.0215）。踝有效惯量 Isaac ~0.024 vs MuJoCo ~0.002 kg·m²（**12 倍差**）→ Kp=35 下固有频率 6Hz vs **21Hz**。且 Kd=1.5 的阻尼项在速度 >**12 rad/s** 时单独就会顶满 18 Nm 钳位（观测峰值 17.9）——速度尖峰→阻尼项吃光力矩→位置控制零权限→速度更失控的恶性循环。
+3. **PD 模型验证**：effort = clip(35·(pos_des_raw−pos) + 1.5·(−vel), ±18) 重构相关系数 0.86/0.93（左右踝 pitch），确认外部 PD + ctrlrange 钳位模型；MJCF 关节 damping=1 统一值与训练随机化区间 [0.9,1.5] 相近（次要）。
+
+**排除项**：非 exp1.4 顾虑的 5.5/6.5Hz 高频振荡复发——稳定窗 action 频谱主峰全在步态基频 1.5Hz，-0.004 的 action_smoothness 未引发高频抖动。
+
+**修复建议（MuJoCo 侧模型对齐，无需重训）**：
+
+1. MJCF ctrlrange：踝 ±18→**±68**、髋 roll/yaw ±50→**±153**（对齐 Isaac 训练有效限）
+2. MJCF 关节补 armature：踝 0.0215、髋 pitch 0.16、髋 yaw 0.0105、膝 0.25（训练区间中值，与 play.py fixed_armature 同源）
+3. 改后同流程复测 walk_diag，验收稳定行走 ≥12s 不摔 + 踝 effort 饱和帧占比 <5%
 
