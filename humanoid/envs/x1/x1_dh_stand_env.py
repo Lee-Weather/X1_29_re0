@@ -645,6 +645,23 @@ class X1DHStandEnv(LeggedRobot):
         low = torch.relu(self.cfg.rewards.min_swing_height - feet_z)
         return (low * mid.float()).sum(dim=1)
 
+    def _reward_ankle_roll_des(self):
+        """
+        exp1.10: 支撑相踝 roll 期望角平方惩罚——治理镜像外撑偏置（exp1.9 §7 附B）。
+        刚性地面上支撑脚实际角被地面反力卡近 0°（feet_rotation 看不到支撑侧），
+        偏置只体现在期望角与 21~25 Nm 常值力矩上，故直接对期望角定价。
+        平脚 CoP 调制的合法小幅期望（<0.1 rad）代价可忽略，大偏置代价陡增。
+        读 post-clip 期望（lagged_actions_scaled 已含限幅），与 PD 执行同口径。
+        """
+        contact = self.contact_forces[:, self.feet_indices, 2] > 5.
+        r = torch.zeros(self.num_envs, device=self.device)
+        for i, name in enumerate(self.dof_names):
+            if 'ankle_roll' in name:
+                k = 0 if 'left' in name else 1   # feet_indices[0]=左脚（与 _compute_torques 限幅块同映射）
+                des = self.lagged_actions_scaled[:, i] + self.default_dof_pos[:, i]
+                r += torch.square(des) * contact[:, k].float()
+        return r
+
     def _reward_feet_contact_number(self):
         """
         Calculates a reward based on the number of feet contacts aligning with the gait phase. 

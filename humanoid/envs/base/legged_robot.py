@@ -738,7 +738,10 @@ class LeggedRobot(BaseTask):
         # 外翻发生在落地前（摆动相）→ 摆动时限幅保期望可达（exp1.8 实证左踝落地误差 4.5°）
         # 横滚平衡发生在支撑相 → 触地时放开保控制带宽（治 exp1.8 晃动恶化 1.9 倍）
         # 在期望角层 clip（lagged_action*scale + default），不修改动作空间
+        # exp1.10: 支撑相增加安全限幅 ±0.60（URDF ±0.64 留 margin）——exp1.9 右踝期望 25% 帧超限位（max 0.759），
+        # 真机撞限位风险；>0.5 rad 支撑必骑刃无平衡价值。偏置本身由 ankle_roll_des 惩罚治理，此处仅兜底
         ankle_roll_des_limit = getattr(self.cfg.control, 'ankle_roll_des_limit', None)
+        ankle_roll_des_limit_stance = getattr(self.cfg.control, 'ankle_roll_des_limit_stance', None)
         if ankle_roll_des_limit is not None:
             contact = self.contact_forces[:, self.feet_indices, 2] > 5.   # [N,2] 支撑=True（阈值与奖励一致）
             swing = ~contact
@@ -747,8 +750,12 @@ class LeggedRobot(BaseTask):
                 if 'ankle_roll' in name:
                     foot_k = 0 if 'left' in name else 1   # feet_indices[0]=左脚, [1]=右脚（play.py 同映射）
                     des = self.lagged_actions_scaled[:, i] + self.default_dof_pos[:, i]
-                    des_clipped = torch.clamp(des, -ankle_roll_des_limit, ankle_roll_des_limit)
-                    des_applied = torch.where(swing[:, foot_k], des_clipped, des)
+                    des_swing = torch.clamp(des, -ankle_roll_des_limit, ankle_roll_des_limit)
+                    if ankle_roll_des_limit_stance is not None:
+                        des_stance = torch.clamp(des, -ankle_roll_des_limit_stance, ankle_roll_des_limit_stance)
+                    else:
+                        des_stance = des
+                    des_applied = torch.where(swing[:, foot_k], des_swing, des_stance)
                     self.lagged_actions_scaled[:, i] = des_applied - self.default_dof_pos[:, i]
             
         if self.cfg.domain_rand.randomize_coulomb_friction:

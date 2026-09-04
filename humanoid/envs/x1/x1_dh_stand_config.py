@@ -153,7 +153,10 @@ class X1DHStandCfg(LeggedRobotCfg):
         action_scale = 0.5
         # exp1.8: 踝 roll 期望角限幅（执行层保证命令可达，附3: 策略索要±0.49而执行仅到+0.09）
         # None=不限幅；数值=期望角绝对值上限（rad）。作用于 action→pos_des 转换，不改动作空间
-        ankle_roll_des_limit = 0.35
+        ankle_roll_des_limit = 0.35   # exp1.9: 摆动相限幅（保落地期望可达）
+        # exp1.10: 支撑相安全限幅（URDF ±0.64 留 margin）——exp1.9 右踝期望 25% 帧超限位（max 0.759），
+        # 支撑相大角无平衡价值（>0.5 rad 必骑刃），仅作安全兜底；偏置本身由 ankle_roll_des 惩罚治理
+        ankle_roll_des_limit_stance = 0.60
         # decimation: Number of control action updates @ sim DT per policy DT
         decimation = 10  # 50hz 100hz
 
@@ -337,11 +340,12 @@ class X1DHStandCfg(LeggedRobotCfg):
             feet_contact_number = 2.0
             # gait
             feet_air_time = 1.8  # exp1.8: 1.2→1.8 提步频/压双支撑（exp1.7 步频0.8Hz/双支撑50%）
-            low_swing = -1.0     # exp1.9: 新增低摆惩罚（摆动中段瞬时脚高<min_swing_height 线性罚，最低抬脚红线）
+            low_swing = -0.7     # exp1.10: -1.0→-0.7 松绑（exp1.9 红线2 双达标含余量 p10 5.17/4.55，释放权重空间给 0.4 段跟踪回升 67%→70%）
+            ankle_roll_des = -2.0  # exp1.10: 新增支撑相踝 roll 期望平方惩罚（附B: 支撑期望镜像外撑 +13.9/−27.8°，刚性地面下实际角被卡近 0，feet_rotation 看不到，唯一可定价对象是期望角本身）
             foot_slip = -0.2   # exp1.7: -0.1→-0.2 压支撑相滑行（步频0.425Hz推算步长0.94m超腿长，前进靠贴地拖蹭）
             feet_distance = 0.2   # exp0.3: 0.3→0.2 回退（exp0.2 证实带来 vx 过冲副作用，收益不明显）
             knee_distance = 0.2
-            feet_contact_number = 2.8  # exp1.9: 2.4→2.8 左右对称红线（exp1.8 支撑占比差 0.063，目标 ≤0.04）
+            feet_contact_number = 3.2  # exp1.10: 2.8→3.2 对称收尾（exp1.9 支撑占比差 0.059，目标 ≤0.04；exp1.3 验证过的机制）
             # lateral
             lat_vel = -2.0        # exp1.1: -1.2->-2.0 加压（exp1 净漂 -0.10/-0.12 未压住）
             yaw_drift = -1.2      # exp1.8: -0.8→-1.2 加压（附2: 左支撑+1.67°/步是偏航唯一净源）
@@ -355,8 +359,8 @@ class X1DHStandCfg(LeggedRobotCfg):
             track_vel_hard = 0.5
             # base pos
             default_joint_pos = 1.0
-            orientation = 1.2     # exp1.1: 1.0->1.2 微调（-y 漂伴随左倾，roll 姿态保持协同纠偏）
-            feet_rotation = 0.5  # exp1.8: 0.3→0.5 压脚姿态偏转（附3: 左踝roll落地误差22.6°）
+            orientation = 1.4     # exp1.10: 1.2→1.4 晃动收尾（exp1.9 roll std 3.35°，目标 ≤3.0°；躯干横滚姿态与 feet_rotation 分工）
+            feet_rotation = 1.2  # exp1.10: 0.5→1.2 压镜像翻（附B: 摆动镜像内合 −8.9/+10.3° p95 17°；0.5 时 rew≡0.0000 被大规模违反但梯度不足）
             base_height = 0.2
             base_acc = 0.2
             # energy
