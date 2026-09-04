@@ -632,6 +632,19 @@ class X1DHStandEnv(LeggedRobot):
         self.feet_air_time *= ~self.contact_filt
         return air_time.sum(dim=1)
 
+    def _reward_low_swing(self):
+        """
+        exp1.9: 最低抬脚红线——惩罚摆动中段瞬时脚底高度低于 min_swing_height 的帧。
+        与 feet_clearance（累计爬升峰值达标）互补：一个拉峰值，一个保瞬时下限。
+        中段窗口（0.15~0.45s）跳过起抬/落地过渡，避免策略学出抽搐式弹跳。
+        注意：须在 _reward_feet_air_time 之后调用（依赖 feet_air_time 更新）。
+        """
+        contact = self.contact_forces[:, self.feet_indices, 2] > 5.
+        feet_z = self.rigid_state[:, self.feet_indices, 2] - self.cfg.rewards.feet_to_ankle_distance
+        mid = (self.feet_air_time > 0.15) & (self.feet_air_time < 0.45) & (~contact)
+        low = torch.relu(self.cfg.rewards.min_swing_height - feet_z)
+        return (low * mid.float()).sum(dim=1)
+
     def _reward_feet_contact_number(self):
         """
         Calculates a reward based on the number of feet contacts aligning with the gait phase. 

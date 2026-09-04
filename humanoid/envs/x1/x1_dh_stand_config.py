@@ -321,6 +321,8 @@ class X1DHStandCfg(LeggedRobotCfg):
         final_swing_joint_delta_pos = [0.25, 0.05, -0.11, 0.35, -0.16, 0.0, -0.25, -0.05, 0.11, 0.35, -0.16, 0.0]
         target_feet_height = 0.04
         target_feet_height_max = 0.06
+        # exp1.9: 最低抬脚红线——摆动中段瞬时脚底高度低于该值被 low_swing 惩罚（feet_clearance 管峰值，此项保下限）
+        min_swing_height = 0.03
         feet_to_ankle_distance = 0.041
         cycle_time = 0.7
         # if true negative total rewards are clipped at zero (avoids early termination problems)
@@ -335,10 +337,11 @@ class X1DHStandCfg(LeggedRobotCfg):
             feet_contact_number = 2.0
             # gait
             feet_air_time = 1.8  # exp1.8: 1.2→1.8 提步频/压双支撑（exp1.7 步频0.8Hz/双支撑50%）
+            low_swing = -1.0     # exp1.9: 新增低摆惩罚（摆动中段瞬时脚高<min_swing_height 线性罚，最低抬脚红线）
             foot_slip = -0.2   # exp1.7: -0.1→-0.2 压支撑相滑行（步频0.425Hz推算步长0.94m超腿长，前进靠贴地拖蹭）
             feet_distance = 0.2   # exp0.3: 0.3→0.2 回退（exp0.2 证实带来 vx 过冲副作用，收益不明显）
             knee_distance = 0.2
-            feet_contact_number = 2.4  # exp1.3: 2.0→2.4 强化左右步节拍对称（治偏航离散累积）
+            feet_contact_number = 2.8  # exp1.9: 2.4→2.8 左右对称红线（exp1.8 支撑占比差 0.063，目标 ≤0.04）
             # lateral
             lat_vel = -2.0        # exp1.1: -1.2->-2.0 加压（exp1 净漂 -0.10/-0.12 未压住）
             yaw_drift = -1.2      # exp1.8: -0.8→-1.2 加压（附2: 左支撑+1.67°/步是偏航唯一净源）
